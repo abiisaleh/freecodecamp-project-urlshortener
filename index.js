@@ -45,6 +45,13 @@ app.get('/api/shorturl/:id', function(req, res) {
 app.post('/api/shorturl', function(req, res) {
   const url = req.body.url;
 
+  function isUrl(s) {
+    var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+    return regexp.test(s);
+  }
+
+  if (!isUrl(url)) return res.json({ error: 'invalid url' });
+
   UrlModel.countDocuments({}, function (err, countData) {
     if (err) return console.log(err);
 
