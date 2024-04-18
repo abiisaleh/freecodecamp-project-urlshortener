@@ -4,6 +4,8 @@ const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const dns = require('dns')
+const urlparser = require('url')
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -45,31 +47,23 @@ app.get('/api/shorturl/:id', function(req, res) {
 app.post('/api/shorturl', function(req, res) {
   const url = req.body.url;
 
-  function isUrl(s) {
-    var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-    return regexp.test(s);
-  }
-
-  if (!isUrl(url)) return res.json({ error: 'invalid url' });
-
-  UrlModel.countDocuments({}, function (err, countData) {
-    if (err) return console.log(err);
+  dns.lookup(urlparser.parse(url).hostname, async (err, addres) => {
+    if (!addres) return res.json({error: "Invalid URL"})
+    
+    const countData = await UrlModel.countDocuments({});
 
     const newData = new UrlModel({
       original_url: url,
       short_url: countData + 1
     })
-
+  
     UrlModel.findOne({original_url: url}, function(err, oldData) {
-      if (err) return console.log(err)
-
       if (oldData) {
         let {original_url, short_url} = oldData.toJSON();
         return res.json({original_url, short_url});
       }
 
       newData.save(function(err, data) {
-        if (err) return console.log(err)
         let {original_url, short_url} = data.toJSON();
         res.json({original_url, short_url});
       });
